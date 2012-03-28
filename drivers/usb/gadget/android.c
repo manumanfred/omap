@@ -64,6 +64,8 @@ MODULE_LICENSE("GPL");
 MODULE_VERSION("1.0");
 
 static const char longname[] = "Gadget Android";
+extern void detect_cable_status(void);
+static int first_usb_function_enable = 0;
 
 /* Default vendor and product IDs, overridden by userspace */
 #define VENDOR_ID		0x18D1
@@ -1030,6 +1032,10 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 		}
 		android_enable(dev);
 		dev->enabled = true;
+		if(first_usb_function_enable == 0) {
+			detect_cable_status();
+			first_usb_function_enable = 1;
+		}
 	} else if (!enabled && dev->enabled) {
 		android_disable(dev);
 		list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
