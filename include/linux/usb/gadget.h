@@ -131,9 +131,8 @@ struct usb_ep_ops {
  * @maxpacket:The maximum packet size used on this endpoint.  The initial
  *	value can sometimes be reduced (hardware allowing), according to
  *      the endpoint descriptor used to configure the endpoint.
- * @driver_data:for use by the gadget driver.
- * @desc: endpoint descriptor.  This pointer is set before the endpoint is
- *	enabled and remains valid until the endpoint is disabled.
+ * @driver_data:for use by the gadget driver.  all other fields are
+ *	read-only to gadget drivers.
  *
  * the bus controller driver lists all the general purpose endpoints in
  * gadget->ep_list.  the control endpoint (gadget->ep0) is not in that list,
@@ -146,7 +145,6 @@ struct usb_ep {
 	const struct usb_ep_ops	*ops;
 	struct list_head	ep_list;
 	unsigned		maxpacket:16;
-	const struct usb_endpoint_descriptor	*desc;
 };
 
 /*-------------------------------------------------------------------------*/
@@ -155,8 +153,11 @@ struct usb_ep {
  * usb_ep_enable - configure endpoint, making it usable
  * @ep:the endpoint being configured.  may not be the endpoint named "ep0".
  *	drivers discover endpoints through the ep_list of a usb_gadget.
+ * @desc:descriptor for desired behavior.  caller guarantees this pointer
+ *	remains valid until the endpoint is disabled; the data byte order
+ *	is little-endian (usb-standard).
  *
- * When configurations are set, or when interface settings change, the driver
+ * when configurations are set, or when interface settings change, the driver
  * will enable or disable the relevant endpoints.  while it is enabled, an
  * endpoint may be used for i/o until the driver receives a disconnect() from
  * the host or until the endpoint is disabled.
@@ -171,9 +172,10 @@ struct usb_ep {
  *
  * returns zero, or a negative error code.
  */
-static inline int usb_ep_enable(struct usb_ep *ep)
+static inline int usb_ep_enable(struct usb_ep *ep,
+				const struct usb_endpoint_descriptor *desc)
 {
-	return ep->ops->enable(ep, ep->desc);
+	return ep->ops->enable(ep, desc);
 }
 
 /**
